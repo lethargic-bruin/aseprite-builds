@@ -58,6 +58,29 @@ jobs:
           cd /d C:\aseprite\build
           ninja aseprite
 
+      - name: Bundle non-system DLL dependencies
+        shell: pwsh
+        run: |
+          $bin = "C:\aseprite\build\bin"
+          $deps = dumpbin /dependents "$bin\aseprite.exe" |
+            Select-String -Pattern '^\s+(\S+\.dll)\s*$' |
+            ForEach-Object { $_.Matches[0].Groups[1].Value }
+          Write-Host "aseprite.exe depends on:"
+          $deps | ForEach-Object { Write-Host "  $_" }
+          foreach ($dll in $deps) {
+            foreach ($dir in ($env:PATH -split ';')) {
+              if (-not $dir) { continue }
+              $p = Join-Path $dir $dll
+              if (Test-Path $p) {
+                if ($p -notlike "C:\Windows\*") {
+                  Copy-Item $p $bin -Force
+                  Write-Host "Bundled $p"
+                }
+                break
+              }
+            }
+          }
+
       - name: Upload build
         uses: actions/upload-artifact@v4
         with:
