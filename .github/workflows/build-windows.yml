@@ -1,0 +1,65 @@
+# Place this file at .github/workflows/build-windows.yml in a PRIVATE GitHub repo.
+# Run it from the repo's Actions tab ("Run workflow"), then download the artifact.
+#
+# IMPORTANT: the Skia tag must match the Aseprite version. Check INSTALL.md in the
+# Aseprite repo for the right pairing and update the inputs when you run the workflow.
+
+name: Build Aseprite (Windows x64)
+
+on:
+  workflow_dispatch:
+    inputs:
+      aseprite_ref:
+        description: "Aseprite release tag"
+        default: "v1.3.13"
+      skia_tag:
+        description: "Matching tag from github.com/aseprite/skia/releases"
+        default: "m124-08a5439a6b"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Set up MSVC x64 environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Download prebuilt Skia
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path C:\deps\skia | Out-Null
+          Invoke-WebRequest -Uri "https://github.com/aseprite/skia/releases/download/${{ inputs.skia_tag }}/Skia-Windows-Release-x64.zip" -OutFile skia.zip
+          Expand-Archive -Path skia.zip -DestinationPath C:\deps\skia
+          Remove-Item skia.zip
+
+      - name: Clone Aseprite (with submodules)
+        shell: pwsh
+        run: |
+          git clone --recursive --depth 1 --branch "${{ inputs.aseprite_ref }}" https://github.com/aseprite/aseprite.git C:\aseprite
+
+      - name: Configure
+        shell: cmd
+        run: |
+          cd C:\aseprite
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
+                -DLAF_BACKEND=skia ^
+                -DSKIA_DIR=C:\deps\skia ^
+                -DSKIA_LIBRARY_DIR=C:\deps\skia\out\Release-x64 ^
+                -DSKIA_LIBRARY=C:\deps\skia\out\Release-x64\skia.lib ^
+                -G Ninja ..
+
+      - name: Build
+        shell: cmd
+        run: |
+          cd C:\aseprite\build
+          ninja aseprite
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: aseprite-windows-x64
+          path: C:\aseprite\build\bin
+          retention-days: 7
