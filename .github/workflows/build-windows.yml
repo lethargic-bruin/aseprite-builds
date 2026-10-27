@@ -11,10 +11,10 @@ on:
     inputs:
       aseprite_ref:
         description: "Aseprite release tag"
-        default: "v1.3.13"
+        default: "v1.3.7"
       skia_tag:
         description: "Matching tag from github.com/aseprite/skia/releases"
-        default: "m124-08a5439a6b"
+        default: "m102-861e4743af"
 
 jobs:
   build:
@@ -45,6 +45,7 @@ jobs:
           mkdir build
           cd build
           cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
+                -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ^
                 -DLAF_BACKEND=skia ^
                 -DSKIA_DIR=C:\deps\skia ^
                 -DSKIA_LIBRARY_DIR=C:\deps\skia\out\Release-x64 ^
