@@ -41,7 +41,7 @@ jobs:
       - name: Configure
         shell: cmd
         run: |
-          cd C:\aseprite
+          cd /d C:\aseprite
           mkdir build
           cd build
           cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ^
@@ -54,7 +54,7 @@ jobs:
       - name: Build
         shell: cmd
         run: |
-          cd C:\aseprite\build
+          cd /d C:\aseprite\build
           ninja aseprite
 
       - name: Upload build
